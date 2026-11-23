@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kloop referral leaderboard</title>
+<meta name="description" content="Invite friends to the Kloop waitlist, climb the leaderboard and earn founding spots and early access.">
+<meta name="theme-color" content="#F5F3EE">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F5F3EE'/%3E%3Cpath d='M32 32C25 18 7 18 7 32s18 14 25 0 25-14 25 0-18 14-25 0z' fill='none' stroke='%231B7F4B' stroke-width='8' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F5F3EE;--paper2:#ECE9E0;--ink:#14201B;--ink2:#4A574F;--green:#1B7F4B;--green-d:#0E3B27;--mint:#D6EAD0;--line:#D9D5C8;--white:#FDFCF9;
+--disp:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;--body:"DM Sans","Helvetica Neue",Arial,sans-serif;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 76px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--paper);z-index:60}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--green);outline-offset:3px;border-radius:4px}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--disp);margin:0;letter-spacing:-.025em;line-height:1.08}
+h1{font-size:clamp(2.1rem,6vw,3.2rem);font-weight:800}
+h2{font-size:clamp(1.6rem,4vw,2.1rem);font-weight:700;margin-bottom:18px}
+h3{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+.lead{color:var(--ink2);font-size:1.1rem;margin-top:12px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(245,243,238,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:12px}
+.mark{display:inline-flex;align-items:center;font:800 26px/1 var(--disp);letter-spacing:-.03em;text-decoration:none;color:var(--ink)}
+.mark svg{width:1.55em;height:.8em;margin:0 .04em;overflow:visible}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border-radius:999px;font:700 1rem var(--body);text-decoration:none;border:2px solid var(--ink);cursor:pointer;background:transparent;color:var(--ink);transition:background .2s,color .2s}
+.btn.pri{background:var(--green);border-color:var(--green);color:#fff}
+.btn.pri:hover{background:var(--green-d);border-color:var(--green-d)}
+.btn.sec:hover{background:var(--ink);color:var(--paper)}
+.btn[disabled]{opacity:.6;cursor:default}
+.nav .btn{min-height:40px;padding:0 18px;font-size:.92rem}
+section{padding:44px 0 8px}
+main{padding-bottom:72px}
+.banner{background:var(--mint);border:2px solid var(--ink);border-radius:12px;padding:12px 16px;font-weight:700;margin-bottom:22px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:26px 0}
+.stats>div{background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:16px 14px}
+.stats small{display:block;color:var(--ink2);font-size:.82rem;line-height:1.3;min-height:2.1em}
+.stats b{display:block;font:800 clamp(1.7rem,6vw,2.4rem)/1.1 var(--disp);margin-top:6px;color:var(--green)}
+.card{background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:22px;box-shadow:8px 8px 0 var(--mint)}
+.card p{color:var(--ink2);margin-top:6px}
+.copy{display:flex;gap:10px;margin:18px 0 14px}
+.copy input,.wl input{flex:1;min-width:0;min-height:48px;padding:0 16px;border:2px solid var(--ink);border-radius:12px;background:var(--paper);font:500 1rem var(--body);color:var(--ink)}
+.copy .btn{white-space:nowrap}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.row .btn{min-height:44px;padding:0 18px;font-size:.95rem}
+.wl{display:flex;gap:10px;margin-top:22px}
+#gl-status{min-height:1.6em;margin-top:14px;font-weight:500;color:var(--ink2)}
+.prog{background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+.prog small{display:block;color:var(--ink2);font-weight:700;font-size:.82rem}
+.prog h3{margin:2px 0 4px}
+.prog p{color:var(--ink2);font-size:.95rem}
+.bar{height:10px;background:var(--paper2);border-radius:999px;overflow:hidden;margin-top:12px}
+.bar i{display:block;height:100%;background:var(--green);border-radius:999px}
+.prog.ok{border-color:var(--green);background:var(--mint)}
+.prog .st{margin-top:10px;font-weight:700}
+.prog.ok .st{color:var(--green-d)}
+.lb{list-style:none;margin:0;padding:0;background:var(--white);border:2px solid var(--ink);border-radius:14px;overflow:hidden}
+.lb li{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.lb li:last-child{border-bottom:0}
+.lb .hd{background:var(--paper2);font-size:.82rem;font-weight:700;color:var(--ink2);padding:10px 18px}
+.lb .rk{font:800 1.2rem var(--disp)}
+.lb .ct{font:800 1.2rem var(--disp);color:var(--green)}
+.lb li.me{background:var(--mint)}
+.lb li.me .nm::after{content:" (you)";font-weight:700}
+.empty{color:var(--ink2);background:var(--white);border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center}
+.rules{margin:0 0 24px;padding-left:20px;color:var(--ink2)}
+.rules li{margin-bottom:8px}
+.rw{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.rw:empty{display:none}
+.rw>div{background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:18px}
+.rw em{display:block;font:700 .82rem var(--body);font-style:normal;color:var(--green);margin-bottom:6px}
+.rw b{display:block;font:700 1.1rem/1.2 var(--disp);margin-bottom:4px}
+.rw span{color:var(--ink2);font-size:.92rem}
+.note{font-size:.88rem;color:var(--ink2);margin-top:12px}
+footer{border-top:1px solid var(--line);padding:26px 0;font-size:.9rem;color:var(--ink2)}
+@media (max-width:520px){
+ .copy,.wl{flex-direction:column}
+ .stats{gap:8px}
+ .stats>div{padding:12px 10px}
+ .row .btn{flex:1 1 40%}
+ .card{padding:18px;box-shadow:5px 5px 0 var(--mint)}
+}
+</style>
+</head>
+<body>
+<header>
+ <div class="wrap nav">
+  <a class="mark" href="index.html" aria-label="Kloop home">KL<svg viewBox="0 0 60 30" aria-hidden="true"><path d="M30 15C22 3 4 3 4 15s18 12 26 0 26-12 26 0-18 12-26 0z" fill="none" stroke="#1B7F4B" stroke-width="6" stroke-linejoin="round"/></svg>P</a>
+  <a class="btn pri" href="index.html#waitlist">Join the Waitlist</a>
+ </div>
+</header>
+
+<main class="wrap">
+ <section id="loading"><p class="lead" role="status">Loading...</p></section>
+
+ <section id="dash" hidden>
+  <p class="banner" id="banner" hidden>Your email is confirmed. You are locked in.</p>
+  <h1>Your referral dashboard</h1>
+  <div class="stats">
+   <div><small>Successful referrals</small><b id="s-ref">0</b></div>
+   <div><small>Waiting to confirm</small><b id="s-pend">0</b></div>
+   <div><small>Leaderboard position</small><b id="s-rank">-</b></div>
+  </div>
+  <p id="s-hint" class="note" style="margin:-10px 0 22px"></p>
+  <div class="card">
+   <h3>Your personal link</h3>
+   <p>Every friend who joins with it and confirms their email counts as a successful referral.</p>
+   <div class="copy"><input id="reflink" type="text" readonly aria-label="Your referral link"><button class="btn pri" id="copy" type="button">Copy link</button></div>
+   <div class="row"><button class="btn sec" id="shareBtn" type="button" hidden>Share</button><a class="btn sec" id="wa" href="#" target="_blank" rel="noopener">WhatsApp</a><a class="btn sec" id="xs" href="#" target="_blank" rel="noopener">Post on X</a></div>
+  </div>
+  <h2 style="margin-top:36px">Your reward progress</h2>
+  <div id="progress"></div>
+ </section>
+
+ <section id="getlink" hidden>
+  <h1 id="gl-title">Find your referral link</h1>
+  <p class="lead" id="gl-lead">Enter the email you joined the waitlist with and we will send you your link and dashboard. No account needed.</p>
+  <div class="wl">
+   <input id="gl-email" type="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address">
+   <input id="gl-co" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+   <button class="btn pri" id="gl-btn" type="button">Email me my link</button>
+  </div>
+  <p id="gl-status" role="status" aria-live="polite"></p>
+  <p class="note">Not on the waitlist yet? <a href="index.html#waitlist">Join here</a> and get your link straight away.</p>
+ </section>
+
+ <section id="board">
+  <h2>Leaderboard</h2>
+  <ol class="lb" id="lb" hidden></ol>
+  <p class="empty" id="lb-empty" hidden>No confirmed referrals yet. Be the first on the board.</p>
+  <p class="note">Ranked by successful referrals. Ties go to whoever reached the count first. Names are anonymous.</p>
+ </section>
+
+ <section id="rules">
+  <h2>How it works</h2>
+  <ul class="rules">
+   <li>Join the waitlist and confirm your email to get your personal link.</li>
+   <li>Share it. When a friend joins with your link and confirms their email, that is one successful referral.</li>
+   <li>Standings update automatically as referrals are confirmed. You only appear on the board once you have at least one.</li>
+   <li>Final rewards are confirmed by Kloop. Fake and duplicate signups are removed and do not count.</li>
+  </ul>
+  <div class="rw" id="rewards"></div>
+  <p class="empty" id="rw-empty" hidden>Reward details are being finalised. Every confirmed referral is already being recorded.</p>
+ </section>
+</main>
+
+<footer><div class="wrap">Built by @joe_kaltho</div></footer>
+
+<script>
+(function(){
+ var API="https://bkdtmibxqmuqkckkagza.supabase.co/functions/v1/referral";
+ var RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+ function $(id){return document.getElementById(id)}
+ function h(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+ // The token lives in the URL fragment so it is never sent to any server or logged.
+ var m=/[#&]t=([\w.-]+)/.exec(location.hash),token=m?m[1]:'';
+ function call(opts){return fetch(API+(opts.query||''),opts.body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(opts.body)}:{}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){return {status:r.status,json:j}})})}
+
+ function rule(r){
+  if(r.kind==='rank')return 'Top '+r.rank_limit+(r.min_referrals>1?' with at least '+r.min_referrals+' referrals':' of the leaderboard');
+  return 'Reach '+r.min_referrals+' successful referral'+(r.min_referrals>1?'s':'');
+ }
+ function plural(n,w){return n+' '+w+(n===1?'':'s')}
+
+ function renderBoard(d,myHandle){
+  var lb=$('lb');lb.textContent='';
+  var rows=(d&&d.entries)||[];
+  $('lb-empty').hidden=rows.length>0;lb.hidden=rows.length===0;
+  if(!rows.length)return;
+  var hd=h('li','hd');hd.appendChild(h('span',null,'#'));hd.appendChild(h('span',null,'Member'));hd.appendChild(h('span',null,'Referrals'));lb.appendChild(hd);
+  rows.forEach(function(e){
+   var li=h('li',e.handle===myHandle?'me':'');
+   li.appendChild(h('span','rk',String(e.rank)));li.appendChild(h('span','nm','Member '+e.handle));li.appendChild(h('span','ct',String(e.referrals)));
+   lb.appendChild(li);
+  });
+ }
+ function renderRewards(d){
+  var box=$('rewards');box.textContent='';
+  var rs=(d&&d.rewards)||[];
+  $('rw-empty').hidden=rs.length>0;
+  rs.forEach(function(r){
+   var c=h('div');c.appendChild(h('em',null,rule(r)));c.appendChild(h('b',null,r.title));c.appendChild(h('span',null,r.description||''));box.appendChild(c);
+  });
+ }
+ function renderMe(me){
+  $('loading').hidden=true;$('getlink').hidden=true;$('dash').hidden=false;
+  $('banner').hidden=!me.verified_now;
+  $('s-ref').textContent=me.verified_referrals;$('s-pend').textContent=me.pending_referrals;
+  $('s-rank').textContent=me.rank?'#'+me.rank:'Not yet';
+  $('s-hint').textContent=me.rank?('Out of '+plural(me.total_ranked,'ranked member')+'.'):'Get your first confirmed referral to enter the leaderboard.';
+  var url=location.origin+'/?ref='+me.referral_code,msg='Join me on the Kloop waitlist:';
+  $('reflink').value=url;
+  $('wa').href='https://wa.me/?text='+encodeURIComponent(msg+' '+url);
+  $('xs').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(msg)+'&url='+encodeURIComponent(url);
+  if(navigator.share){var sb=$('shareBtn');sb.hidden=false;sb.onclick=function(){navigator.share({title:'Kloop',text:msg,url:url}).catch(function(){})}}
+  var box=$('progress');box.textContent='';
+  if(!me.rewards.length){box.appendChild(h('p','empty','Reward details are being finalised. Your referrals are already being recorded.'));return}
+  me.rewards.forEach(function(r){
+   var need=r.needed||0,refs=me.verified_referrals;
+   var p=h('div','prog'+(r.qualified?' ok':''));
+   p.appendChild(h('small',null,rule(r)));p.appendChild(h('h3',null,r.title));
+   if(r.description)p.appendChild(h('p',null,r.description));
+   var pct=r.qualified?100:Math.round(100*refs/Math.max(refs+need,1));
+   var bar=h('div','bar'),i=h('i');i.style.width=pct+'%';bar.appendChild(i);p.appendChild(bar);
+   var st=r.qualified?(r.kind==='rank'?'You are in position for this right now (#'+me.rank+').':'You qualify for this.')
+    :need>0?(r.kind==='rank'?plural(need,'more referral')+' to get into the top '+r.rank_limit+'.':plural(need,'more referral')+' to qualify.')
+    :'Confirm your email to qualify.';
+   p.appendChild(h('p','st',st));
+   box.appendChild(p);
+  });
+ }
+ function showGetLink(msg,title){
+  $('loading').hidden=true;$('dash').hidden=true;$('getlink').hidden=false;
+  if(msg){$('gl-title').textContent=title||'That link is no longer valid';$('gl-lead').textContent=msg}
+ }
+
+ // Request link by email
+ var gb=$('gl-btn'),ge=$('gl-email'),gs=$('gl-status');
+ function ask(){
+  var v=ge.value.trim();
+  if(!RE.test(v)||v.length>254){gs.textContent='Enter a valid email address.';ge.focus();return}
+  gb.disabled=true;gs.textContent='Sending...';
+  call({body:{action:'request_link',email:v,company:$('gl-co').value}}).then(function(r){
+   if(r.status===200)gs.textContent='If that email is on the waitlist, your link is on its way. Check your inbox and spam folder. You can ask again in a few minutes.';
+   else if(r.status===429)gs.textContent='Too many attempts. Please try again in an hour.';
+   else if(r.status===400)gs.textContent='That email address does not look valid.';
+   else gs.textContent='Something went wrong. Please try again.';
+  }).catch(function(){gs.textContent='Something went wrong. Please try again.'}).then(function(){gb.disabled=false});
+ }
+ gb.addEventListener('click',ask);
+ ge.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();ask()}});
+
+ // Copy
+ $('copy').addEventListener('click',function(){
+  var i=$('reflink'),b=this;
+  function ok(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy link'},2000)}
+  function fb(){i.select();try{if(document.execCommand('copy'))ok()}catch(e){}}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(i.value).then(ok,fb);else fb();
+ });
+
+ // Load: leaderboard (public) and, with a token, the member dashboard
+ var board=call({query:'?action=leaderboard'}).then(function(r){return r.status===200?r.json:null}).catch(function(){return null});
+ var mine=token?call({body:{action:'me',token:token}}).catch(function(){return {status:0,json:{}}}):Promise.resolve(null);
+ Promise.all([board,mine]).then(function(x){
+  var d=x[0],r=x[1],handle=null;
+  if(!token)showGetLink();
+  else if(r&&r.status===200&&r.json.ok){handle=r.json.handle;renderMe(r.json)}
+  else if(r&&r.status===401)showGetLink('Links can only be used from the email we sent you, and an old or damaged link will not work. Enter your email and we will send a fresh one.');
+  else showGetLink('Please refresh in a moment, or request a fresh link below.','We could not load your dashboard');
+  renderBoard(d,handle);renderRewards(d);
+ });
+})();
+</script>
+</body>
+</html>

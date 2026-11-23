@@ -1,22 +1,53 @@
 import { handle } from '../supabase/functions/waitlist-signup/index.ts';
 const env={SUPABASE_URL:'https://x.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'srv-key'};
-let calls=[],reply={ok:true,json:async()=> 'created'};
+const M={member_id:'11111111-1111-1111-1111-111111111111',email:'a@b.co',referral_code:'klp_abc234',verified:false,send:false};
+const R=(o)=>({ok:true,json:async()=>({...M,...o})});
+let calls=[],reply=R({status:'created'});
 const f=async(u,o)=>{calls.push({u,o});if(reply.throw)throw new Error('db down');return reply};
 const req=(m,b,h={})=>new Request('http://l/',{method:m,body:b===undefined?undefined:(typeof b==='string'?b:JSON.stringify(b)),headers:h});
 let fail=0;const t=async(n,r,st,chk)=>{const x=await r;const j=x.status===204?null:await x.json();const ok=x.status===st&&(!chk||chk(j));console.log(ok?'PASS':'FAIL',n,x.status,JSON.stringify(j));if(!ok)fail++};
-await t('valid',handle(req('POST',{email:' Ada@Example.COM '}),env,f),200,j=>j.ok&&JSON.parse(calls.at(-1).o.body).p_email==='ada@example.com'&&!calls.at(-1).o.body.includes('srv-key'));
-reply={ok:true,json:async()=> 'duplicate'};
+await t('valid',handle(req('POST',{email:' Ada@Example.COM '}),env,f),200,j=>j.ok&&j.referral_code==='klp_abc234'&&JSON.parse(calls.at(-1).o.body).p_email==='ada@example.com'&&calls.at(-1).u.endsWith('/rpc/waitlist_signup')&&!calls.at(-1).o.body.includes('srv-key'));
+reply=R({status:'duplicate'});
 await t('duplicate same as success',handle(req('POST',{email:'a@b.co'}),env,f),200,j=>j.ok===true&&Object.keys(j).length===1);
-reply={ok:true,json:async()=> 'rate_limited'};
+reply=R({status:'rate_limited'});
 await t('rate limited',handle(req('POST',{email:'a@b.co'}),env,f),429);
 reply={ok:false,status:500,json:async()=>({})};
 await t('db error never success',handle(req('POST',{email:'a@b.co'}),env,f),500,j=>!j.ok);
 reply={throw:true};
 await t('fetch throws',handle(req('POST',{email:'a@b.co'}),env,f),500);
-reply={ok:true,json:async()=> 'created'};
+reply=R({status:'created'});
 for(const bad of ['nope','a@b','@b.co','a b@c.co','',null,123,'x'.repeat(250)+'@b.co'])await t('invalid '+String(bad).slice(0,12),handle(req('POST',{email:bad}),env,f),400);
 await t('bad json',handle(req('POST','{oops'),env,f),400);
 await t('oversize',handle(req('POST',JSON.stringify({email:'a@b.co',pad:'x'.repeat(3000)})),env,f),413);
+
+// referral code handling
+await t('valid ref passed through',handle(req('POST',{email:'a@b.co',ref:' KLP_abc234 '}),env,f),200,j=>JSON.parse(calls.at(-1).o.body).p_ref_code==='klp_abc234');
+for(const badRef of ['klp_abc','nope','klp_ABC234; drop table','x'.repeat(30),123,{a:1}])await t('malformed ref ignored '+String(badRef).slice(0,10),handle(req('POST',{email:'a@b.co',ref:badRef}),env,f),200,j=>j.ok&&JSON.parse(calls.at(-1).o.body).p_ref_code===null);
+await t('no ref -> null',handle(req('POST',{email:'a@b.co'}),env,f),200,j=>JSON.parse(calls.at(-1).o.body).p_ref_code===null);
+reply=R({status:'duplicate',referral_code:'klp_secret'});
+await t('duplicate never leaks a code',handle(req('POST',{email:'a@b.co'}),env,f),200,j=>Object.keys(j).length===1&&!JSON.stringify(j).includes('klp_'));
+reply=R({status:'weird'});
+await t('unknown rpc status is an error',handle(req('POST',{email:'a@b.co'}),env,f),500);
+reply=R({status:'created'});
+
+// emails
+const mailEnv={...env,LINK_SECRET:'link-secret-for-tests',SITE_URL:'https://kloop.example/',RESEND_API_KEY:'re_test',EMAIL_FROM:'Kloop <hi@kloop.example>'};
+const mailCalls=[];const fm=async(u,o)=>{if(u.startsWith('https://api.resend.com')){mailCalls.push(JSON.parse(o.body));return {ok:true,status:200,json:async()=>({id:'x'})}}return f(u,o)};
+reply=R({status:'created',send:true});
+await t('email sent for new signup',handle(req('POST',{email:'a@b.co'}),mailEnv,fm),200,j=>j.ok&&mailCalls.length===1&&mailCalls[0].to[0]==='a@b.co'&&mailCalls[0].html.includes('https://kloop.example/?ref=klp_abc234')&&/referral\.html#t=[\w-]{22}\.[\w-]{32}/.test(mailCalls[0].text)&&mailCalls[0].html.includes('Confirm my email'));
+reply=R({status:'duplicate',send:false});
+await t('no email inside cooldown',handle(req('POST',{email:'a@b.co'}),mailEnv,fm),200,()=>mailCalls.length===1);
+reply=R({status:'duplicate',send:true,verified:true});
+await t('verified duplicate gets the dashboard email',handle(req('POST',{email:'a@b.co'}),mailEnv,fm),200,j=>Object.keys(j).length===1&&mailCalls.length===2&&mailCalls[1].html.includes('Open my dashboard'));
+reply=R({status:'created',send:true});
+const fbad=async(u,o)=>u.startsWith('https://api.resend.com')?{ok:false,status:422,json:async()=>({})}:f(u,o);
+await t('email provider failure never fails signup',handle(req('POST',{email:'a@b.co'}),mailEnv,fbad),200,j=>j.ok&&j.referral_code==='klp_abc234');
+const fthrow=async(u,o)=>{if(u.startsWith('https://api.resend.com'))throw new Error('net');return f(u,o)};
+await t('email network failure never fails signup',handle(req('POST',{email:'a@b.co'}),mailEnv,fthrow),200,j=>j.ok);
+const before=mailCalls.length;
+await t('missing email config never fails signup',handle(req('POST',{email:'a@b.co'}),{...mailEnv,RESEND_API_KEY:undefined},fm),200,j=>j.ok&&mailCalls.length===before);
+await t('missing LINK_SECRET never fails signup',handle(req('POST',{email:'a@b.co'}),{...mailEnv,LINK_SECRET:undefined},fm),200,j=>j.ok&&mailCalls.length===before);
+reply=R({status:'created'});
 const n=calls.length;await t('honeypot',handle(req('POST',{email:'a@b.co',company:'spam'}),env,f),200);
 console.log(calls.length===n?'PASS honeypot skips db':'FAIL honeypot hit db');if(calls.length!==n)fail++;
 await t('GET 405',handle(req('GET'),env,f),405);

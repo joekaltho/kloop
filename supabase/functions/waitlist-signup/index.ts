@@ -1,57 +1,43 @@
-// Public waitlist endpoint. Deploy with verify_jwt = false. Uses only built-in env vars:
-// SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (server-side only). Optional secret: ALLOWED_ORIGINS (comma-separated).
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-async function hmac(key: string, value: string): Promise<string> {
-  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+// Public waitlist endpoint. Deploy with verify_jwt = false. Built-in env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (server-side only).
+// Optional secrets: ALLOWED_ORIGINS (comma-separated), and for referral emails: LINK_SECRET, SITE_URL, RESEND_API_KEY, EMAIL_FROM.
+// A signup is always saved first; if email is not configured or fails, the signup still succeeds.
+import { EMAIL_RE, REF_RE, clientIpHash, defer, makeHttp, readBody, rpc } from "../_shared/http.ts";
+import { sendMemberLink } from "../_shared/mail.ts";
 
 export async function handle(req: any, env: any, fetchImpl: any = fetch): Promise<Response> {
-  const allowed = (env.ALLOWED_ORIGINS || "").split(",").map((s: string) => s.trim()).filter(Boolean);
-  const origin = req.headers.get("origin") || "";
-  const cors: Record<string, string> = {
-    "Access-Control-Allow-Origin": allowed.length === 0 ? "*" : allowed.includes(origin) ? origin : allowed[0],
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "content-type",
-    "Vary": "Origin",
-  };
-  const json = (status: number, body: unknown) =>
-    new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+  const { cors, json } = makeHttp(req, env, "POST, OPTIONS");
 
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
 
   try {
-    const raw = await req.text();
-    if (raw.length > 2048) return json(413, { error: "too_large" });
-    let body: any;
-    try { body = JSON.parse(raw); } catch { return json(400, { error: "invalid_json" }); }
-    if (!body || typeof body !== "object") return json(400, { error: "invalid_json" });
+    const parsed = await readBody(req);
+    if (parsed.error) return json(parsed.status!, { error: parsed.error });
+    const body = parsed.body;
 
     if (typeof body.company === "string" && body.company.trim() !== "") return json(200, { ok: true }); // honeypot: bots
 
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     if (!email || email.length > 254 || !EMAIL_RE.test(email)) return json(400, { error: "invalid_email" });
 
-    const ip = (req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
-    const ipHash = await hmac(env.SUPABASE_SERVICE_ROLE_KEY, ip);
+    // Malformed referral codes are ignored (never an error) so a bad link cannot block a signup.
+    const refRaw = typeof body.ref === "string" ? body.ref.trim().toLowerCase() : "";
+    const ref = REF_RE.test(refRaw) ? refRaw : null;
 
-    const res = await fetchImpl(`${env.SUPABASE_URL}/rest/v1/rpc/waitlist_join`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-      body: JSON.stringify({ p_email: email, p_ip_hash: ipHash }),
+    const result = await rpc(env, fetchImpl, "waitlist_signup", {
+      p_email: email,
+      p_ip_hash: await clientIpHash(req, env),
+      p_ref_code: ref,
     });
-    if (!res.ok) { console.error("waitlist_join failed", res.status); return json(500, { error: "server_error" }); }
-    const result = await res.json();
-    if (result === "rate_limited") return json(429, { error: "rate_limited" });
-    if (result === "created" || result === "duplicate") return json(200, { ok: true }); // duplicates look identical
-    return json(500, { error: "server_error" });
+    if (result?.status === "rate_limited") return json(429, { error: "rate_limited" });
+    if (result?.status !== "created" && result?.status !== "duplicate") return json(500, { error: "server_error" });
+
+    if (result.send) {
+      await defer(sendMemberLink(env, fetchImpl, { memberId: result.member_id, email: result.email, code: result.referral_code, verified: !!result.verified }));
+    }
+
+    // Only a brand-new signup gets its code back; duplicates look identical to before (nothing about existing members leaks).
+    return json(200, result.status === "created" ? { ok: true, referral_code: result.referral_code } : { ok: true });
   } catch (e) {
     console.error("waitlist-signup error", e instanceof Error ? e.message : "unknown");
     return json(500, { error: "server_error" });
